@@ -43,14 +43,14 @@ class SentimentExperiment:
         self.df = df
         self.results_log = []
 
-    def _get_processed_tokens(self, text, use_negation=True, use_pos=False):
+    def _get_processed_tokens(self, text, use_negation=True, use_pos=False, 
+                              filter_adjectives=False, use_position=False):
         """
-        Tokenizes using NLTK and applies Negation and/or POS tags.
+        Tokenizes using NLTK and applies Negation, POS tags, and filtering.
         """
-        # Tokenize with NLTK (handles contractions like n't correctly)
         tokens = nltk.word_tokenize(text)
         
-        # Handle Negation (Row 2 logic)
+        # 1. Handle Negation (Row 2 logic)
         if use_negation:
             negation_words = {'not', 'no', 'never', "n't", 'hardly', 'scarcely', 'barely'}
             punctuation_set = set(string.punctuation)
@@ -67,35 +67,58 @@ class SentimentExperiment:
                     processed_tokens.append(f"NOT_{t}" if negation_scope else t)
             tokens = processed_tokens
 
-        # Handle POS Tagging (Row 5 logic)
-        if use_pos:
+        # 2. Part-of-Speech Tagging
+        # Required for both Row (5) and Row (6)
+        if use_pos or filter_adjectives:
             tagged = nltk.pos_tag(tokens)
-            tokens = [f"{word}_{tag}" for word, tag in tagged]
+            
+            # Row (6): Use Adjectives only
+            if filter_adjectives:
+                # JJ, JJR, JJS are standard Penn Treebank tags for adjectives
+                tokens = [word for word, tag in tagged if tag.startswith('JJ')]
+            elif use_pos:
+                # Row (5): Append POS tags to words
+                tokens = [f"{word}_{tag}" for word, tag in tagged]
+
+        # 3. Positional Tagging
+        if use_position:
+            n = len(tokens)
+            pos_tokens = []
+            for i, t in enumerate(tokens):
+                if i < n // 4:
+                    pos_tokens.append(f"{t}_first")
+                elif i > (3 * n) // 4:
+                    pos_tokens.append(f"{t}_last")
+                else:
+                    pos_tokens.append(f"{t}_mid")
+            tokens = pos_tokens
 
         return " ".join(tokens)
 
     def run_configuration(self, label, ngram_range=(1, 1), use_presence=True, 
-                          use_negation=True, use_pos=False):
+                          use_negation=True, use_pos=False, filter_adjectives=False,
+                          use_position=False, max_features=None, min_df=4):
         """
-        Reproduces a specific configuration from Pang et al. (2002) Figure 3.
+        Reproduces all configurations from Figure 3.
         """
         # Pre-process text based on flags
         docs = self.df['review'].apply(
-            lambda x: self._get_processed_tokens(x, use_negation, use_pos)
+            lambda x: self._get_processed_tokens(x, use_negation, use_pos, 
+                                                 filter_adjectives, use_position)
         )
 
         # Scikit-learn Vectorizer
         vectorizer = CountVectorizer(
             ngram_range=ngram_range,
-            binary=use_presence,  # True = Presence, False = Frequency
-            min_df=4,             # Feature cutoff used in paper
-            token_pattern=r'\S+'  # Capture tokens precisely as processed above
+            binary=use_presence,
+            min_df=min_df if max_features is None else 1, # Use parameter min_df unless max_features is set
+            max_features=max_features,               # Required for Row (7) 
+            token_pattern=r'\S+'
         )
         
         X = vectorizer.fit_transform(docs)
         y = self.df['sentiment'].values
 
-        # Classifiers for exam: Naive Bayes, Perceptron, Adaboost
         models = {
             'NB': MultinomialNB(),
             'Perceptron': Perceptron(max_iter=1000, random_state=42),
@@ -105,7 +128,6 @@ class SentimentExperiment:
             )
         }
 
-        # 3-fold cross-validation as per paper
         cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
         res = {"Setting": label, "Features": X.shape[1]}
         
@@ -127,15 +149,31 @@ df_reviews = load_sentiment_data(data_path)
 if not df_reviews.empty:
     exp = SentimentExperiment(df_reviews)
 
-    # Replicating Row (1) & (2): Presence vs Frequency
-    exp.run_configuration("Unigrams Freq", use_presence=False)
-    exp.run_configuration("Unigrams Pres", use_presence=True)
-    
-    # Replicating Row (3): Bigrams
-    exp.run_configuration("Unigrams+Bigrams", ngram_range=(1, 2))
-    
-    # Replicating Row (5): POS Tagging
-    exp.run_configuration("Unigrams+POS", use_pos=True)
+    # (1) Unigrams Frequency: Count occurrences of words 
+    exp.run_configuration("(1) Unigrams Freq", use_presence=False)
 
-    print("\n--- Comparison ---")
-    print(pd.DataFrame(exp.results_log).to_string(index=False))
+    # (2) Unigrams Presence: Binary indicator
+    exp.run_configuration("(2) Unigrams Pres", use_presence=True)
+
+    # (3) Unigrams + Bigrams: Combination of single words and word pairs
+    exp.run_configuration("(3) Unigrams+Bigrams", ngram_range=(1, 2))
+
+    # (4) Bigrams only: Using only word pairs
+    exp.run_configuration("(4) Bigrams only", ngram_range=(2, 2), min_df=7)
+
+    # (5) Unigrams + POS: Appending Part-of-Speech tags to words
+    exp.run_configuration("(5) Unigrams+POS", use_pos=True)
+
+    # (6) Adjectives only: Filtering text to keep only descriptive words
+    exp.run_configuration("(6) Adjectives only", filter_adjectives=True)
+
+    # (7) Top 2633 Unigrams: Most frequent unigrams
+    exp.run_configuration("(7) Top 2633 Unigrams", max_features=2633)
+
+    # (8) Unigrams + Position: Tagging words based on document quarter
+    exp.run_configuration("(8) Unigrams+Position", use_position=True)
+
+    # --- Summary Table ---
+    print("\n--- Sentiment Classification Results ---")
+    results_df = pd.DataFrame(exp.results_log)
+    print(results_df.to_string(index=False))
