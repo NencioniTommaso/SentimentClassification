@@ -1,0 +1,82 @@
+# Sentiment Analysis on Movie Reviews
+
+Progetto per l'esame di Intelligenza Artificiale (2025/26)
+Studente: Tommaso Nencioni 7138543
+
+Questo progetto riproduce ed estende gli esperimenti di classificazione del sentimento presentati da Pang et al. (2002) . L'obiettivo è determinare se una recensione cinematografica sia positiva o negativa utilizzando tecniche di apprendimento supervisionato.
+
+---
+
+## 1. Struttura del Repository
+
+* main.py: Contiene la classe SentimentExperiment, la logica di preprocessing e le configurazioni per i test.
+* requirements.txt: Elenco delle librerie Python (pandas, numpy, scikit-learn, nltk).
+* data/tokens/: Directory destinata a ospitare il dataset estratto.
+
+---
+
+## 2. Dataset
+
+Per la riproduzione è stato utilizzato il Movie Review Polarity Dataset v1.1.
+
+* Link al Dataset: [https://www.cs.cornell.edu/people/pabo/movie-review-data/]
+* Istruzioni: Estrarre il pacchetto poldata.python.tar.gz e posizionare le cartelle 'pos' e 'neg' in data/tokens/. Il dataset originale consiste in 700 recensioni positive e 700 negative.
+
+
+
+---
+
+## 3. Descrizione dei File Sorgente
+
+### main.py
+
+Il codice implementa le metodologie descritte nel paper originale per trasformare il testo in feature numeriche:
+
+1. load_sentiment_data: Carica le recensioni gestendo diverse codifiche per evitare errori di decodifica.
+
+
+2. SentimentExperiment (Classe):
+* 
+*apply_negation_tagging: Implementa la tecnica di Das e Chen (2001) aggiungendo il prefisso "NOT*" a ogni parola tra una negazione e il primo segno di punteggiatura.
+
+
+* _get_pos_tagged_text: Utilizza NLTK per aggiungere tag grammaticali (Part-of-Speech), distinguendo ad esempio "love" come verbo da "love" come sostantivo.
+
+
+* run_configuration: Gestisce il CountVectorizer per confrontare la presenza (binaria) rispetto alla frequenza dei termini.
+
+
+
+
+3. Classificatori: Implementa Naive Bayes (MultinomialNB), Perceptron e AdaBoost.
+
+
+
+---
+
+## 4. Installazione e Riproduzione
+
+### Prerequisiti
+
+È consigliato l'uso di Python 3.10 o superiore.
+
+### Sequenza di comandi
+
+1. Creazione ambiente virtuale:
+python -m venv venv
+source venv/bin/activate  # (Windows: venv\Scripts\activate)
+2. Installazione dipendenze:
+pip install -r requirements.txt
+3. Esecuzione:
+python main.py
+
+Il comando eseguirà automaticamente le 8 configurazioni della Figura 3 del paper:
+
+* (1) Unigrams Frequency
+* (2) Unigrams Presence
+* (3) Unigrams + Bigrams
+* (4) Bigrams only
+* (5) Unigrams + POS
+* (6) Adjectives only
+* (7) Top 2633 Unigrams
+* (8) Unigrams + Position

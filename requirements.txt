@@ -1,0 +1,9 @@
+# Data Manipulation and Numerical Operations
+pandas
+numpy
+
+# Machine Learning and Vectorization
+scikit-learn
+
+# Natural Language Processing
+nltk
