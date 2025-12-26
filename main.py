@@ -50,7 +50,7 @@ class SentimentExperiment:
         """
         tokens = nltk.word_tokenize(text)
         
-        # 1. Handle Negation (Row 2 logic)
+        # 1. Handle Negation
         if use_negation:
             negation_words = {'not', 'no', 'never', "n't", 'hardly', 'scarcely', 'barely'}
             punctuation_set = set(string.punctuation)
@@ -156,10 +156,10 @@ if not df_reviews.empty:
     exp.run_configuration("(2) Unigrams Pres", use_presence=True)
 
     # (3) Unigrams + Bigrams: Combination of single words and word pairs
-    exp.run_configuration("(3) Unigrams+Bigrams", ngram_range=(1, 2))
+    exp.run_configuration("(3) Unigrams+Bigrams", ngram_range=(1, 2), use_negation=False)
 
     # (4) Bigrams only: Using only word pairs
-    exp.run_configuration("(4) Bigrams only", ngram_range=(2, 2), min_df=7)
+    exp.run_configuration("(4) Bigrams only", ngram_range=(2, 2), use_negation=False, min_df=7)
 
     # (5) Unigrams + POS: Appending Part-of-Speech tags to words
     exp.run_configuration("(5) Unigrams+POS", use_pos=True)
