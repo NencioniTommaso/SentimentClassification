@@ -25,6 +25,7 @@ def load_sentiment_data(base_path):
     for folder_name, sentiment_label in categories.items():
         folder_path = os.path.join(base_path, folder_name)
         if not os.path.isdir(folder_path): continue
+
         for file_name in os.listdir(folder_path):
             if file_name.endswith('.txt'):
                 file_path = os.path.join(folder_path, file_name)
@@ -35,6 +36,7 @@ def load_sentiment_data(base_path):
                     with open(file_path, 'r', encoding='latin-1') as f:
                         review_text = f.read()
                 data.append({'review': review_text, 'sentiment': sentiment_label})
+
     return pd.DataFrame(data)
 
 # --- 2. Sentiment Experiment Class ---
@@ -122,10 +124,7 @@ class SentimentExperiment:
         models = {
             'NB': MultinomialNB(),
             'Perceptron': Perceptron(max_iter=1000, random_state=42),
-            'AdaBoost': AdaBoostClassifier(
-                estimator=DecisionTreeClassifier(max_depth=1), 
-                n_estimators=50, random_state=42
-            )
+            # 'AdaBoost': AdaBoostClassifier(estimator=DecisionTreeClassifier(max_depth=1), n_estimators=50, random_state=42)
         }
 
         cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
@@ -134,7 +133,7 @@ class SentimentExperiment:
         print(f"Executing: {label}...")
         for name, clf in models.items():
             scores = cross_val_score(clf, X, y, cv=cv, scoring='accuracy', n_jobs=-1)
-            res[name] = f"{np.mean(scores)*100:.2f}%"
+            res[name] = round(np.mean(scores)*100, 2)
         
         self.results_log.append(res)
         return res
@@ -176,4 +175,5 @@ if not df_reviews.empty:
     # --- Summary Table ---
     print("\n--- Sentiment Classification Results ---")
     results_df = pd.DataFrame(exp.results_log)
+    results_df.to_csv("sentiment_results.csv", index=False)
     print(results_df.to_string(index=False))
