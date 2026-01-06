@@ -1,3 +1,5 @@
 /venv
+/__pycache__
+/data
 sentiment_results.csv
 original_results.csv
