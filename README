@@ -1,82 +1,74 @@
 # Sentiment Analysis on Movie Reviews
 
 Progetto per l'esame di Intelligenza Artificiale (2025/26)
+
 Studente: Tommaso Nencioni 7138543
 
-Questo progetto riproduce ed estende gli esperimenti di classificazione del sentimento presentati da Pang et al. (2002) . L'obiettivo è determinare se una recensione cinematografica sia positiva o negativa utilizzando tecniche di apprendimento supervisionato.
+Questo progetto riproduce gli esperimenti di classificazione del sentimento presentati da Pang et al. (2002). L'obiettivo è determinare se una recensione cinematografica sia positiva o negativa utilizzando tecniche di apprendimento supervisionato, confrontando le performance di **Naive Bayes** e **Perceptron**.
 
 ---
 
 ## 1. Struttura del Repository
 
-* main.py: Contiene la classe SentimentExperiment, la logica di preprocessing e le configurazioni per i test.
-* requirements.txt: Elenco delle librerie Python (pandas, numpy, scikit-learn, nltk).
-* data/tokens/: Directory destinata a ospitare il dataset estratto.
+* **`sentiment_module.py`**: Modello logico del progetto. Contiene la funzione di caricamento dati e la classe `SentimentExperiment` che gestisce il pre-processing avanzato (negazione, POS tagging, filtraggio).
+* **`main.py`**: Punto di ingresso del software. Configura ed esegue gli 8 esperimenti definiti nel paper originale e genera il report finale.
+* **`requirements.txt`**: Elenco delle librerie necessarie (`pandas`, `numpy`, `scikit-learn`, `nltk`).
+* **`data/tokens/`**: Directory destinata a ospitare il dataset (cartelle `pos` e `neg`).
 
 ---
 
 ## 2. Dataset
 
-Per la riproduzione è stato utilizzato il Movie Review Polarity Dataset v1.1.
+Per la riproduzione è stato utilizzato il **Movie Review Polarity Dataset v1.1**.
 
-* Link al Dataset: [https://www.cs.cornell.edu/people/pabo/movie-review-data/]
-* Istruzioni: Estrarre il pacchetto poldata.python.tar.gz e posizionare le cartelle 'pos' e 'neg' in data/tokens/. Il dataset originale consiste in 700 recensioni positive e 700 negative.
-
-
+* **Link al Dataset**: [[https://www.cs.cornell.edu/people/pabo/movie-review-data/](https://www.cs.cornell.edu/people/pabo/movie-review-data/)]
+* **Istruzioni**: Estrarre il pacchetto `poldata.python.tar.gz` e posizionare le cartelle `pos` e `neg` in `data/tokens/`. Il dataset consiste in 700 recensioni positive e 700 negative.
 
 ---
 
 ## 3. Descrizione dei File Sorgente
 
-### main.py
+### `sentiment_module.py`
 
-Il codice implementa le metodologie descritte nel paper originale per trasformare il testo in feature numeriche:
+Il modulo implementa le trasformazioni testuali descritte nel paper:
 
-1. load_sentiment_data: Carica le recensioni gestendo diverse codifiche per evitare errori di decodifica.
-
-
-2. SentimentExperiment (Classe):
-* 
-*apply_negation_tagging: Implementa la tecnica di Das e Chen (2001) aggiungendo il prefisso "NOT*" a ogni parola tra una negazione e il primo segno di punteggiatura.
-
-
-* _get_pos_tagged_text: Utilizza NLTK per aggiungere tag grammaticali (Part-of-Speech), distinguendo ad esempio "love" come verbo da "love" come sostantivo.
-
-
-* run_configuration: Gestisce il CountVectorizer per confrontare la presenza (binaria) rispetto alla frequenza dei termini.
+1. **`load_sentiment_data`**: Carica i file di testo gestendo le codifiche `utf-8` e `latin-1`.
+2. **`_get_processed_tokens`**: Il cuore del pre-processing che implementa:
+* **Negation Tagging**: Aggiunta del prefisso `NOT_` tra una negazione e la punteggiatura (tecnica di Das e Chen).
+* **POS Tagging**: Associazione dei tag grammaticali alle parole (es. `film_NN`).
+* **Filtro Aggettivi**: Restrizione del vocabolario ai soli tag `JJ*` (configurazione 6).
+* **Positional Tagging**: Etichettatura delle parole in base alla posizione (primo quarto, metà, ultimo quarto del testo).
 
 
 
+### `main.py`
 
-3. Classificatori: Implementa Naive Bayes (MultinomialNB), Perceptron e AdaBoost.
+Coordina l'esecuzione sperimentale:
 
-
+* Inizializza la pipeline di cross-validation (Stratified 3-fold come nel paper).
+* Configura i classificatori: `MultinomialNB` (Naive Bayes) e `Perceptron`.
+* Esegue i test sulle 8 varianti della **Figura 3** del paper.
 
 ---
 
 ## 4. Installazione e Riproduzione
 
-### Prerequisiti
-
-È consigliato l'uso di Python 3.10 o superiore.
-
 ### Sequenza di comandi
 
-1. Creazione ambiente virtuale:
-python -m venv venv
-source venv/bin/activate  # (Windows: venv\Scripts\activate)
-2. Installazione dipendenze:
+1. **Installazione dipendenze**:
 pip install -r requirements.txt
-3. Esecuzione:
+
+
+2. **Esecuzione**:
 python main.py
 
-Il comando eseguirà automaticamente le 8 configurazioni della Figura 3 del paper:
 
-* (1) Unigrams Frequency
-* (2) Unigrams Presence
-* (3) Unigrams + Bigrams
-* (4) Bigrams only
-* (5) Unigrams + POS
-* (6) Adjectives only
+Il software produrrà in output una tabella comparativa e salverà i risultati nel file `sentiment_results.csv`. Le configurazioni eseguite includono:
+
+* (1) Unigrams Frequency vs (2) Unigrams Presence
+* (3) Unigrams + Bigrams e (4) Bigrams only
+* (5) Unigrams + POS e (6) Adjectives only
 * (7) Top 2633 Unigrams
 * (8) Unigrams + Position
+
+---
